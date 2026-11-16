@@ -1,0 +1,319 @@
+{
+  "name": "jenkins-build-doctor",
+  "displayName": "Jenkins Build Doctor",
+  "description": "Browse Jenkins jobs and pipelines, investigate failed builds and get evidence-based root-cause diagnosis — rule-based by default, optional AI.",
+  "version": "0.1.0",
+  "publisher": "jenkins-build-doctor",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Other",
+    "Debuggers"
+  ],
+  "keywords": [
+    "jenkins",
+    "ci",
+    "pipeline",
+    "build failure",
+    "diagnosis"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "jenkinsBuildDoctor",
+          "title": "Jenkins Build Doctor",
+          "icon": "media/jenkins.svg"
+        }
+      ]
+    },
+    "views": {
+      "jenkinsBuildDoctor": [
+        {
+          "id": "jenkinsBuildDoctor.jobs",
+          "name": "Jobs",
+          "icon": "media/jenkins.svg",
+          "contextualTitle": "Jenkins"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "jenkinsBuildDoctor.jobs",
+        "contents": "Connect to a Jenkins server to browse jobs and diagnose failed builds.\n[Configure Jenkins Connection](command:jenkinsBuildDoctor.configure)\nYou can also analyse a console log you already have open:\n[Diagnose Log in Active Editor](command:jenkinsBuildDoctor.analyzeActiveEditor)",
+        "when": "!jenkinsBuildDoctor.connected"
+      }
+    ],
+    "commands": [
+      { "command": "jenkinsBuildDoctor.configure", "title": "Configure Connection", "category": "Jenkins", "icon": "$(plug)" },
+      { "command": "jenkinsBuildDoctor.testConnection", "title": "Test Connection", "category": "Jenkins" },
+      { "command": "jenkinsBuildDoctor.signOut", "title": "Sign Out (Remove Stored Token)", "category": "Jenkins" },
+      { "command": "jenkinsBuildDoctor.refresh", "title": "Refresh", "category": "Jenkins", "icon": "$(refresh)" },
+      { "command": "jenkinsBuildDoctor.filterJobs", "title": "Filter Jobs…", "category": "Jenkins", "icon": "$(filter)" },
+      { "command": "jenkinsBuildDoctor.clearFilter", "title": "Clear Filter", "category": "Jenkins", "icon": "$(clear-all)" },
+      { "command": "jenkinsBuildDoctor.searchJobs", "title": "Search Jobs…", "category": "Jenkins", "icon": "$(search)" },
+      { "command": "jenkinsBuildDoctor.diagnoseBuild", "title": "Diagnose Build…", "category": "Jenkins", "icon": "$(debug-alt)" },
+      { "command": "jenkinsBuildDoctor.diagnoseLastFailed", "title": "Diagnose Last Failed Build", "category": "Jenkins", "icon": "$(debug-alt)" },
+      { "command": "jenkinsBuildDoctor.selectBuild", "title": "Select Build to Diagnose…", "category": "Jenkins", "icon": "$(list-selection)" },
+      { "command": "jenkinsBuildDoctor.openConsole", "title": "Open Console Output", "category": "Jenkins", "icon": "$(output)" },
+      { "command": "jenkinsBuildDoctor.openInBrowser", "title": "Open in Browser", "category": "Jenkins", "icon": "$(link-external)" },
+      { "command": "jenkinsBuildDoctor.copyUrl", "title": "Copy URL", "category": "Jenkins" },
+      { "command": "jenkinsBuildDoctor.analyzeActiveEditor", "title": "Diagnose Log in Active Editor", "category": "Jenkins" },
+      { "command": "jenkinsBuildDoctor.configureAi", "title": "Configure AI Provider…", "category": "Jenkins" },
+      { "command": "jenkinsBuildDoctor.resetAiConsent", "title": "Revoke AI Data-Sharing Consent", "category": "Jenkins" },
+      { "command": "jenkinsBuildDoctor.showLogs", "title": "Show Extension Logs", "category": "Jenkins" }
+    ],
+    "menus": {
+      "view/title": [
+        { "command": "jenkinsBuildDoctor.searchJobs", "when": "view == jenkinsBuildDoctor.jobs && jenkinsBuildDoctor.connected", "group": "navigation@1" },
+        { "command": "jenkinsBuildDoctor.filterJobs", "when": "view == jenkinsBuildDoctor.jobs && jenkinsBuildDoctor.connected && !jenkinsBuildDoctor.filtered", "group": "navigation@2" },
+        { "command": "jenkinsBuildDoctor.clearFilter", "when": "view == jenkinsBuildDoctor.jobs && jenkinsBuildDoctor.filtered", "group": "navigation@2" },
+        { "command": "jenkinsBuildDoctor.refresh", "when": "view == jenkinsBuildDoctor.jobs", "group": "navigation@3" },
+        { "command": "jenkinsBuildDoctor.configure", "when": "view == jenkinsBuildDoctor.jobs", "group": "1_config@1" },
+        { "command": "jenkinsBuildDoctor.testConnection", "when": "view == jenkinsBuildDoctor.jobs && jenkinsBuildDoctor.connected", "group": "1_config@2" },
+        { "command": "jenkinsBuildDoctor.configureAi", "when": "view == jenkinsBuildDoctor.jobs", "group": "1_config@3" },
+        { "command": "jenkinsBuildDoctor.signOut", "when": "view == jenkinsBuildDoctor.jobs && jenkinsBuildDoctor.connected", "group": "1_config@4" }
+      ],
+      "view/item/context": [
+        { "command": "jenkinsBuildDoctor.diagnoseBuild", "when": "view == jenkinsBuildDoctor.jobs && viewItem == build", "group": "inline@1" },
+        { "command": "jenkinsBuildDoctor.diagnoseBuild", "when": "view == jenkinsBuildDoctor.jobs && viewItem == build", "group": "1_diagnose@1" },
+        { "command": "jenkinsBuildDoctor.openConsole", "when": "view == jenkinsBuildDoctor.jobs && viewItem == build", "group": "1_diagnose@2" },
+        { "command": "jenkinsBuildDoctor.diagnoseLastFailed", "when": "view == jenkinsBuildDoctor.jobs && viewItem == job", "group": "inline@1" },
+        { "command": "jenkinsBuildDoctor.diagnoseLastFailed", "when": "view == jenkinsBuildDoctor.jobs && viewItem == job", "group": "1_diagnose@1" },
+        { "command": "jenkinsBuildDoctor.selectBuild", "when": "view == jenkinsBuildDoctor.jobs && viewItem == job", "group": "1_diagnose@2" },
+        { "command": "jenkinsBuildDoctor.openInBrowser", "when": "view == jenkinsBuildDoctor.jobs && viewItem =~ /^(job|build|folder)$/", "group": "2_nav@1" },
+        { "command": "jenkinsBuildDoctor.copyUrl", "when": "view == jenkinsBuildDoctor.jobs && viewItem =~ /^(job|build|folder)$/", "group": "2_nav@2" },
+        { "command": "jenkinsBuildDoctor.refresh", "when": "view == jenkinsBuildDoctor.jobs && viewItem =~ /^(job|folder)$/", "group": "3_refresh@1" }
+      ],
+      "commandPalette": [
+        { "command": "jenkinsBuildDoctor.diagnoseLastFailed", "when": "false" },
+        { "command": "jenkinsBuildDoctor.openConsole", "when": "false" },
+        { "command": "jenkinsBuildDoctor.openInBrowser", "when": "false" },
+        { "command": "jenkinsBuildDoctor.copyUrl", "when": "false" },
+        { "command": "jenkinsBuildDoctor.selectBuild", "when": "false" },
+        { "command": "jenkinsBuildDoctor.clearFilter", "when": "jenkinsBuildDoctor.filtered" }
+      ]
+    },
+    "configuration": [
+      {
+        "title": "Jenkins Server",
+        "properties": {
+          "jenkinsBuildDoctor.server.url": {
+            "type": "string",
+            "default": "",
+            "markdownDescription": "Base URL of the Jenkins server, e.g. `https://jenkins.example.com/` (include any context path such as `/jenkins/`). Use **Jenkins: Configure Connection** to set this together with credentials. The API token is stored in VS Code SecretStorage, never in settings.",
+            "scope": "machine-overridable"
+          },
+          "jenkinsBuildDoctor.server.username": {
+            "type": "string",
+            "default": "",
+            "description": "Jenkins username that owns the API token.",
+            "scope": "machine-overridable"
+          },
+          "jenkinsBuildDoctor.server.strictSSL": {
+            "type": "boolean",
+            "default": true,
+            "markdownDescription": "Verify the Jenkins server TLS certificate. Only disable for internal servers with self-signed certificates you trust. Corporate CAs installed in the OS trust store are normally honoured by VS Code (`http.systemCertificates`).",
+            "scope": "machine-overridable"
+          },
+          "jenkinsBuildDoctor.server.requestTimeoutSeconds": {
+            "type": "number",
+            "default": 30,
+            "minimum": 5,
+            "maximum": 600,
+            "description": "Timeout for a single Jenkins API request."
+          }
+        }
+      },
+      {
+        "title": "Jobs & Builds",
+        "properties": {
+          "jenkinsBuildDoctor.jobs.buildHistoryLimit": {
+            "type": "number",
+            "default": 25,
+            "minimum": 1,
+            "maximum": 200,
+            "description": "Number of recent builds to show per job."
+          },
+          "jenkinsBuildDoctor.jobs.searchMaxDepth": {
+            "type": "number",
+            "default": 6,
+            "minimum": 1,
+            "maximum": 20,
+            "description": "Maximum folder depth crawled by Search Jobs and Filter Jobs."
+          },
+          "jenkinsBuildDoctor.jobs.searchMaxJobs": {
+            "type": "number",
+            "default": 5000,
+            "minimum": 100,
+            "description": "Stop indexing after this many jobs (protects very large Jenkins instances)."
+          }
+        }
+      },
+      {
+        "title": "Analysis",
+        "properties": {
+          "jenkinsBuildDoctor.analysis.maxLogSizeMB": {
+            "type": "number",
+            "default": 15,
+            "minimum": 1,
+            "maximum": 200,
+            "markdownDescription": "Maximum console log size downloaded per build. Larger logs keep the first 1 MB and the most recent part (where failures usually are)."
+          },
+          "jenkinsBuildDoctor.analysis.contextLines": {
+            "type": "number",
+            "default": 3,
+            "minimum": 0,
+            "maximum": 20,
+            "description": "Lines of context shown around each piece of evidence."
+          },
+          "jenkinsBuildDoctor.analysis.customRules": {
+            "type": "array",
+            "default": [],
+            "markdownDescription": "Additional diagnosis rules for your organisation. Each rule: `{ \"id\": \"my-rule\", \"title\": \"…\", \"category\": \"deployment\", \"pattern\": \"regex\", \"flags\": \"i\", \"certainty\": \"confirmed\"|\"hypothesis\", \"weight\": 1-100, \"summary\": \"…\", \"causes\": [\"…\"], \"remediation\": [\"…\"] }`.",
+            "items": {
+              "type": "object",
+              "required": ["id", "title", "pattern"],
+              "properties": {
+                "id": { "type": "string" },
+                "title": { "type": "string" },
+                "category": { "type": "string", "enum": ["compilation", "test", "dependency", "authentication", "infrastructure", "resource", "kubernetes", "deployment", "docker", "scm", "pipeline", "configuration", "quality", "timeout", "generic"] },
+                "pattern": { "type": "string" },
+                "flags": { "type": "string" },
+                "certainty": { "type": "string", "enum": ["confirmed", "hypothesis"] },
+                "weight": { "type": "number" },
+                "summary": { "type": "string" },
+                "causes": { "type": "array", "items": { "type": "string" } },
+                "remediation": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
+        }
+      },
+      {
+        "title": "Security",
+        "properties": {
+          "jenkinsBuildDoctor.security.redactConsoleOutput": {
+            "type": "boolean",
+            "default": true,
+            "description": "Redact detected secrets (tokens, passwords, keys, credentials in URLs) from console output shown in VS Code and from diagnosis reports."
+          },
+          "jenkinsBuildDoctor.security.additionalRedactionPatterns": {
+            "type": "array",
+            "default": [],
+            "items": { "type": "string" },
+            "description": "Extra regular expressions whose matches are replaced with ****** (e.g. internal token formats)."
+          }
+        }
+      },
+      {
+        "title": "AI (optional)",
+        "properties": {
+          "jenkinsBuildDoctor.ai.provider": {
+            "type": "string",
+            "enum": ["none", "vscodeLm", "bedrock", "openaiCompatible"],
+            "enumDescriptions": [
+              "Rule-based analysis only. Nothing leaves your machine except Jenkins API calls.",
+              "Use a VS Code language model (e.g. GitHub Copilot). No API key needed if you already have access.",
+              "Amazon Bedrock Converse API.",
+              "Any OpenAI-compatible /chat/completions endpoint (Azure OpenAI, Ollama, vLLM, LiteLLM, internal gateways…)."
+            ],
+            "default": "none",
+            "markdownDescription": "LLM provider for the optional **Ask AI** step. Rule-based analysis always runs locally. Redacted log excerpts are sent only after you explicitly consent per provider/endpoint."
+          },
+          "jenkinsBuildDoctor.ai.maxPromptChars": {
+            "type": "number",
+            "default": 24000,
+            "minimum": 2000,
+            "maximum": 400000,
+            "description": "Upper bound on the size of the (redacted) excerpt sent to the AI provider."
+          },
+          "jenkinsBuildDoctor.ai.requestTimeoutSeconds": {
+            "type": "number",
+            "default": 120,
+            "minimum": 10,
+            "maximum": 900,
+            "description": "Timeout for AI provider requests."
+          },
+          "jenkinsBuildDoctor.ai.bedrock.region": {
+            "type": "string",
+            "default": "us-east-1",
+            "description": "AWS region for Amazon Bedrock."
+          },
+          "jenkinsBuildDoctor.ai.bedrock.modelId": {
+            "type": "string",
+            "default": "anthropic.claude-opus-5-5",
+            "markdownDescription": "Bedrock model ID or inference profile ID/ARN used with the Converse API (any Converse-capable model works)."
+          },
+          "jenkinsBuildDoctor.ai.bedrock.authMode": {
+            "type": "string",
+            "enum": ["apiKey", "accessKeys", "environment"],
+            "enumDescriptions": [
+              "Amazon Bedrock API key (bearer token) stored in SecretStorage.",
+              "AWS access key ID / secret (and optional session token) stored in SecretStorage.",
+              "Read AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_SESSION_TOKEN (or AWS_BEARER_TOKEN_BEDROCK) from the VS Code process environment."
+            ],
+            "default": "apiKey",
+            "description": "How to authenticate with Amazon Bedrock."
+          },
+          "jenkinsBuildDoctor.ai.openaiCompatible.baseUrl": {
+            "type": "string",
+            "default": "",
+            "markdownDescription": "Base URL of an OpenAI-compatible API, e.g. `http://localhost:11434/v1` (Ollama). `/chat/completions` is appended."
+          },
+          "jenkinsBuildDoctor.ai.openaiCompatible.model": {
+            "type": "string",
+            "default": "",
+            "description": "Model name to request."
+          },
+          "jenkinsBuildDoctor.ai.vscodeLm.vendor": {
+            "type": "string",
+            "default": "copilot",
+            "description": "Language model vendor to select (e.g. copilot). Leave empty for any."
+          },
+          "jenkinsBuildDoctor.ai.vscodeLm.family": {
+            "type": "string",
+            "default": "",
+            "description": "Optional model family filter (e.g. a specific model family). Leave empty to use the first available."
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p . && node esbuild.mjs",
+    "bundle": "node esbuild.mjs --production",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc -p . --noEmit",
+    "lint": "eslint src test",
+    "test": "npm run test:unit",
+    "pretest:unit": "tsc -p .",
+    "test:unit": "mocha \"out/test/unit/**/*.test.js\" \"out/test/integration/jenkins*.test.js\"",
+    "pretest:vscode": "tsc -p . && node esbuild.mjs",
+    "test:vscode": "node out/test/integration/runVsCodeTests.js",
+    "package": "vsce package --no-dependencies",
+    "vscode:prepublish": "npm run bundle"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.12.11",
+    "@types/vscode": "1.95.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^3.6.0",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.30.0",
+    "mocha": "^11.6.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.40.0"
+  }
+}
